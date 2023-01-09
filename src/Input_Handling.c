@@ -164,7 +164,6 @@ void read_data(AVL_OS_Tree* tree)
 			int value;
 			scanf("%d", &value);
 
-			printf("%d\n", value);
 			// while(read_int(&value) == EXIT_FAILURE) {}
 
 			AVL_OS_Tree_Node* node = avl_os_tree_lookup_node(tree, &value);
