@@ -189,6 +189,7 @@ void read_data(AVL_OS_Tree* tree)
 		{
 			int value;
 			scanf("%d", &value);
+
 			// while(read_int(&value) == EXIT_FAILURE) {}
 
 			if(tree->root == NULL)
@@ -208,11 +209,6 @@ void read_data(AVL_OS_Tree* tree)
 					print_error(stderr, "ERROR", "W AVL_OS_Tree nie ma podanej wartosci!\n");
 					print_error(stderr, "", "-----------------------------------\n\n");
 				}
-
-				// else
-				// {
-					// fprintf(stderr, "D: udalo sie usunac wartosc!\n");
-				// }
 			}
 		}
 
@@ -220,6 +216,7 @@ void read_data(AVL_OS_Tree* tree)
 		{
 			int value;
 			scanf("%d", &value);
+
 			// while(read_int(&value) == EXIT_FAILURE) {}
 
 			AVL_OS_Tree_Node* node = avl_os_tree_lookup_node(tree, &value);
@@ -241,6 +238,7 @@ void read_data(AVL_OS_Tree* tree)
 		{
 			int value;
 			scanf("%d", &value);
+
 			// while(read_int(&value) == EXIT_FAILURE) {}
 
 			if(tree->root == NULL)
@@ -274,6 +272,7 @@ void read_data(AVL_OS_Tree* tree)
 		{
 			int value;
 			scanf("%d", &value);
+
 			// while(read_int(&value) == EXIT_FAILURE) {}
 
 			if(tree->root == NULL)

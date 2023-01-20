@@ -1,7 +1,7 @@
 #include "AVL_Order_Statistic_Tree.h"
 
-AVL_OS_Tree_Node_Value wartosci[MAX_N][MAX_DEPTH];
-int wskaznik_na_wartosci[MAX_DEPTH];
+AVL_OS_Tree_Node_Value values[MAX_N][MAX_DEPTH];
+int value_index[MAX_DEPTH];
 
 AVL_OS_Tree* avl_os_tree_new(AVL_OS_Tree_Compare_Function compare_function)
 {
@@ -411,21 +411,11 @@ AVL_OS_Tree_Node* avl_os_tree_lookup_node(AVL_OS_Tree* tree, AVL_OS_Tree_Node_Ke
 		{
 			if(difference < 0)
 			{
-				if(node->L == NULL)
-				{
-					break;
-				}
-
 				node = node->L;
 			}
 
 			else
 			{
-				if(node->R == NULL)
-				{
-					break;
-				}
-
 				node = node->R;
 			}
 		}
@@ -555,118 +545,96 @@ AVL_OS_Tree_Node_Value* avl_tree_to_array(AVL_OS_Tree* tree)
 	return array;
 }
 
-AVL_OS_Tree_Node* prev(AVL_OS_Tree* tree, AVL_OS_Tree_Node_Value value)
+static void find_predecessor_and_successor(AVL_OS_Tree* tree, AVL_OS_Tree_Node** predecessor, AVL_OS_Tree_Node** successor, AVL_OS_Tree_Node_Key key)
 {
-	AVL_OS_Tree_Node* node = avl_os_tree_lookup_node(tree, value);
+	AVL_OS_Tree_Node* node = tree->root;
 
-	if(node == NULL)
+	int difference;
+
+	while(node != NULL)
 	{
-		return NULL;
-	}
+		difference = tree->compare_function(node->key, key);
 
-	AVL_OS_Tree_Node_Value node_value = avl_os_tree_node_value(node);
-
-	int difference = tree->compare_function(value, node->value);
-
-	if(difference <= 0)
-	{
-		if(node->L != NULL)
+		if(difference == 0)
 		{
-			node = node->L;
-
-			while(node->R != NULL)
+			if(node->L != NULL)
 			{
-				node = node->R;
+				(*predecessor) = node->L;
+
+				while((*predecessor)->R != NULL)
+				{
+					(*predecessor) = (*predecessor)->R;
+				}
 			}
 
-			return node;
+			if(node->R != NULL)
+			{
+				(*successor) = node->R;
+
+				while((*successor)->L != NULL)
+				{
+					(*successor) = (*successor)->L;
+				}
+			}
+
+			return;
 		}
 
 		else
 		{
-			AVL_OS_Tree_Node* parent = node->parent;
-
-			while(parent != NULL && node == parent->L)
+			if(difference < 0)
 			{
-				node = parent->L;
+				(*predecessor) = node;
 
-				parent = parent->parent;
+				node = node->R;
 			}
 
-			return parent;
+			else
+			{
+				(*successor) = node;
+
+				node = node->L;
+			}
 		}
 	}
+}
 
-	else
-	{
-		return node;
-	}
+AVL_OS_Tree_Node* prev(AVL_OS_Tree* tree, AVL_OS_Tree_Node_Value value)
+{
+	AVL_OS_Tree_Node* predecessor = NULL;
+	AVL_OS_Tree_Node* successor = NULL;
+
+	find_predecessor_and_successor(tree, &predecessor, &successor, value);
+
+	return predecessor;
 }
 
 AVL_OS_Tree_Node* next(AVL_OS_Tree* tree, AVL_OS_Tree_Node_Value value)
 {
-	AVL_OS_Tree_Node* node = avl_os_tree_lookup_node(tree, value);
+	AVL_OS_Tree_Node* predecessor = NULL;
+	AVL_OS_Tree_Node* successor = NULL;
 
-	if(node == NULL)
-	{
-		return NULL;
-	}
+	find_predecessor_and_successor(tree, &predecessor, &successor, value);
 
-	AVL_OS_Tree_Node_Value node_value = avl_os_tree_node_value(node);
-
-	int difference = tree->compare_function(value, node->value);
-
-	if(difference >= 0)
-	{
-		if(node->R != NULL)
-		{
-			node = node->R;
-
-			while(node->L != NULL)
-			{
-				node = node->L;
-			}
-
-			return node;
-		}
-
-		else
-		{
-			AVL_OS_Tree_Node* parent = node->parent;
-
-			while(parent != NULL && node == parent->R)
-			{
-				node = parent->R;
-
-				parent = parent->parent;
-			}
-
-			return parent;
-		}
-	}
-
-	else
-	{
-		return node;
-	}
+	return successor;
 }
 
-void DFS(AVL_OS_Tree_Node* node, int glebokosc)
+void DFS(AVL_OS_Tree_Node* node, int depth)
 {
 	if(node != NULL)
 	{
 		int* value = (int*) avl_os_tree_node_value(node);
 
-		DFS(node->L, glebokosc + 1);
-		DFS(node->R, glebokosc + 1);
+		DFS(node->L, depth + 1);
+		DFS(node->R, depth + 1);
 
-		wartosci[wskaznik_na_wartosci[glebokosc]][glebokosc] = node->value;
-		wskaznik_na_wartosci[glebokosc]++;
+		values[value_index[depth]][depth] = node->value;
+		value_index[depth]++;
 	}
 
 	else
 	{
-		wskaznik_na_wartosci[glebokosc]++;
+		value_index[depth]++;
 	}
 }
 
@@ -694,7 +662,7 @@ void print_tree(AVL_OS_Tree* tree)
 	{
 		FOR(j, MAX_DEPTH)
 		{
-			int* value = (int*) wartosci[i][j];
+			int* value = (int*) values[i][j];
 
 			if(j <= (int) log2(i) || value == NULL)
 			{
@@ -712,14 +680,14 @@ void print_tree(AVL_OS_Tree* tree)
 
 	FOR(i, MAX_DEPTH)
 	{
-		wskaznik_na_wartosci[i] = 0;
+		value_index[i] = 0;
 	}
 
 	FOR(i, (1 << MAX_DEPTH))
 	{
 		FOR(j, MAX_DEPTH)
 		{
-			wartosci[i][j] = NULL;
+			values[i][j] = NULL;
 		}
 	}
 }

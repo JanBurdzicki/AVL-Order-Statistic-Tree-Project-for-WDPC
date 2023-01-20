@@ -1,7 +1,5 @@
 #!/bin/bash
 
-cd "/media/jan/Shared/Janek/PROGRAMOWANIE/C++/Studia/Wstep Do Programowania w Jezyku C/Lista 8/BST/"
-
 mkdir -p build
 
 cd src
