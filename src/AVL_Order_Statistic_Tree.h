@@ -4,10 +4,17 @@
 #include "Messages_Printing.h"
 #include "Libraries_And_Macros.h"
 
-#define AVL_TREE_NULL ((void *) 0)
+// The AVL Order Statistic Tree is a BBST
+// Each node has a key and a value associated with it
+// The nodes are sorted within the tree based on the order of their keys
+// Modifications to the tree are constructed such that
+// the tree remains balanced at all times
+// (there are always roughly equal numbers of nodes on either side of the tree)
 
-typedef void *AVL_OS_Tree_Node_Key;
-typedef void *AVL_OS_Tree_Node_Value;
+#define AVL_TREE_NULL ((void*) 0)
+
+typedef void* AVL_OS_Tree_Node_Key;
+typedef void* AVL_OS_Tree_Node_Value;
 
 typedef int (*AVL_OS_Tree_Compare_Function)(AVL_OS_Tree_Node_Value value_1, AVL_OS_Tree_Node_Value value_2);
 

@@ -40,8 +40,10 @@ static void avl_os_tree_free_subtree(AVL_OS_Tree* tree, AVL_OS_Tree_Node* node)
 
 void avl_os_tree_free(AVL_OS_Tree* tree)
 {
+	// free all nodes
 	avl_os_tree_free_subtree(tree, tree->root);
 
+	// free tree
 	free(tree);
 }
 
@@ -63,6 +65,8 @@ int max(int a, int b)
 	return (a > b) ? a : b;
 }
 
+// Update the node->height from the heights of its children
+//! This does not update the height of any parent nodes
 static void avl_os_tree_update_height(AVL_OS_Tree_Node* node)
 {
 	AVL_OS_Tree_Node* subtree_L = node->L;
@@ -79,6 +83,7 @@ static bool is_left_side_child(AVL_OS_Tree_Node* node)
 	return (node->parent->L == node);
 }
 
+// Replace node_1 with node_2 at its parent
 static void avl_os_tree_node_replace(AVL_OS_Tree* tree, AVL_OS_Tree_Node* node_1, AVL_OS_Tree_Node* node_2)
 {
 	if(node_2 != NULL)
@@ -107,9 +112,31 @@ static void avl_os_tree_node_replace(AVL_OS_Tree* tree, AVL_OS_Tree_Node* node_1
 	}
 }
 
+// Rotate a section of the tree. node is the node at the top of the section to be rotated
+
+ // Left rotation:              Right rotation:
+ //
+ //      B                             D
+ //     / \                           / \
+ //    A   D                         B   E
+ //       / \                       / \
+ //      C   E                     A   C
+ //
+ // is rotated to:              is rotated to:
+ //
+ //        D                           B
+ //       / \                         / \
+ //      B   E                       A   D
+ //     / \                             / \
+ //    A   C                           C   E
+
 static AVL_OS_Tree_Node* avl_os_tree_rotate(AVL_OS_Tree* tree, AVL_OS_Tree_Node* node, bool is_left_rotation)
 {
 	AVL_OS_Tree_Node* root;
+
+	// The child of node will take its place:
+	// * for left rotation it is the right child
+	// * for right rotation it is the left child
 
 	if(is_left_rotation)
 	{
@@ -121,7 +148,11 @@ static AVL_OS_Tree_Node* avl_os_tree_rotate(AVL_OS_Tree* tree, AVL_OS_Tree_Node*
 		root = node->L;
 	}
 
+	// Make root the root node, update parent pointers
+
 	avl_os_tree_node_replace(tree, node, root);
+
+	// Rearrange pointers
 
 	if(is_left_rotation)
 	{
@@ -136,6 +167,8 @@ static AVL_OS_Tree_Node* avl_os_tree_rotate(AVL_OS_Tree* tree, AVL_OS_Tree_Node*
 
 		root->R = node;
 	}
+
+	// Update parent references
 
 	node->parent = root;
 
@@ -155,12 +188,15 @@ static AVL_OS_Tree_Node* avl_os_tree_rotate(AVL_OS_Tree* tree, AVL_OS_Tree_Node*
 		}
 	}
 
+	// Update heights of the affected nodes
+
 	avl_os_tree_update_height(root);
 	avl_os_tree_update_height(node);
 
 	return root;
 }
 
+// Balance node
 static AVL_OS_Tree_Node* avl_os_tree_node_balance(AVL_OS_Tree* tree, AVL_OS_Tree_Node* node)
 {
 	AVL_OS_Tree_Node* subtree_L = node->L;
@@ -172,14 +208,23 @@ static AVL_OS_Tree_Node* avl_os_tree_node_balance(AVL_OS_Tree* tree, AVL_OS_Tree
 
 	int difference = height_R - height_L;
 
+	// If there is unbalance (difference between left and right > 2), then rotate nodes around to fix it
+
 	if(difference >= 2)
 	{
+		// Biased toward the right side too much
+
 		child = subtree_R;
 
 		if(avl_os_tree_subtree_height(child->R) < avl_os_tree_subtree_height(child->L))
 		{
+			// If the right child is biased toward the left side, it must be rotated right first (double rotation)
+
 			avl_os_tree_rotate(tree, subtree_R, false);
 		}
+
+		// Perform a left rotation. After this, the right child will take the place of this node
+		// Update the node pointer
 
 		node = avl_os_tree_rotate(tree, node, true);
 	}
@@ -188,29 +233,43 @@ static AVL_OS_Tree_Node* avl_os_tree_node_balance(AVL_OS_Tree* tree, AVL_OS_Tree
 	{
 		if(difference <= -2)
 		{
+			// Biased toward the left side too much
+
 			child = subtree_L;
 
 			if(avl_os_tree_subtree_height(child->L) < avl_os_tree_subtree_height(child->R))
 			{
+				// If the left child is biased toward the right side, it must be rotated left first (double rotation)
+
 				avl_os_tree_rotate(tree, subtree_L, true);
 			}
+
+			// Perform a right rotation. After this, the left child will take the place of this node
+			// Update the node pointer
 
 			node = avl_os_tree_rotate(tree, node, false);
 		}
 	}
+
+	// Update the height of this node
 
 	avl_os_tree_update_height(node);
 
 	return node;
 }
 
+// Walk up the tree from the given node, performing any needed rotations
 static void avl_os_tree_balance_to_root(AVL_OS_Tree* tree, AVL_OS_Tree_Node* node)
 {
 	AVL_OS_Tree_Node* node_balance = node;
 
 	while(node_balance != NULL)
 	{
+		// Balance this node with necessary
+
 		node_balance = avl_os_tree_node_balance(tree, node_balance);
+
+		// Go to this node's parent
 
 		node_balance = node_balance->parent;
 	}
@@ -273,6 +332,10 @@ AVL_OS_Tree_Node* avl_os_tree_insert(AVL_OS_Tree* tree, AVL_OS_Tree_Node_Key key
 	return new_node;
 }
 
+// Find the nearest node to the given node, to replace it
+// The node returned is unlinked from the tree
+// Returns NULL if the node has no children
+
 static AVL_OS_Tree_Node* avl_os_tree_node_get_replacement(AVL_OS_Tree *tree, AVL_OS_Tree_Node *node)
 {
 	AVL_OS_Tree_Node* subtree_L = node->L;
@@ -284,6 +347,9 @@ static AVL_OS_Tree_Node* avl_os_tree_node_get_replacement(AVL_OS_Tree *tree, AVL
 	{
 		return NULL;
 	}
+
+	// Pick a node from whichever subtree is taller
+	// This helps to keep the tree balanced.
 
 	int height_L = avl_os_tree_subtree_height(subtree_L);
 	int height_R = avl_os_tree_subtree_height(subtree_R);
@@ -323,6 +389,9 @@ void avl_os_tree_remove_node(AVL_OS_Tree *tree, AVL_OS_Tree_Node *node)
 {
 	AVL_OS_Tree_Node* swap_node;
 	AVL_OS_Tree_Node* balance_startpoint;
+
+	// The node to be removed must be swapped with an "adjacent" node, ie. one which has the closest key to this one.
+	// Find a node to swap with.
 
 	swap_node = avl_os_tree_node_get_replacement(tree, node);
 
